@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check server.js)",
+      "Bash(node --check routes/auth.js)",
+      "Bash(node --check controllers/authController.js)",
+      "Bash(node --check controllers/mockupController.js)",
+      "Bash(node --check controllers/orderController.js)"
+    ]
+  }
+}
