@@ -22,8 +22,15 @@ const app = express();
 // When deployed behind Render/Vercel/etc. the rate-limiter needs the real IP.
 app.set('trust proxy', 1);
 
-// Security headers
-app.use(helmet());
+// Security headers.
+// crossOriginResourcePolicy is loosened to 'cross-origin' because this is a REST
+// API intentionally consumed from a different origin (Vercel frontend → Render backend).
+// The same-origin default would block every cross-origin API response.
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // CORS: explicit allow-list only. We refuse to pair credentials with a wildcard origin.
 const allowedOrigins = (process.env.CLIENT_ORIGIN || '')
