@@ -32,22 +32,33 @@ app.use(
   })
 );
 
-// CORS: explicit allow-list only. We refuse to pair credentials with a wildcard origin.
-const allowedOrigins = (process.env.CLIENT_ORIGIN || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
-
+// CORS: explicit allow-list driven by CLIENT_ORIGIN env var (comma-separated).
+// Origins are read on every request so a Render env-var change takes effect after
+// the next redeploy without needing to change code.
+// We use cb(null, false) — not cb(new Error()) — for rejections so the browser
+// receives a proper CORS denial (no Access-Control-Allow-Origin header) instead of
+// a 500 Internal Server Error.
 app.use(
   cors({
     origin: (origin, cb) => {
-      // Allow same-origin / server-to-server (no Origin header) and whitelisted web origins.
+      // Allow server-to-server calls and same-origin requests (no Origin header).
       if (!origin) return cb(null, true);
+
+      const allowedOrigins = (process.env.CLIENT_ORIGIN || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       if (allowedOrigins.length === 0) {
-        return cb(new Error('CORS: CLIENT_ORIGIN is not configured on the server'));
+        // CLIENT_ORIGIN not configured — warn once per unique origin but don't 500.
+        console.warn(`[cors] CLIENT_ORIGIN not set; blocking origin: ${origin}`);
+        return cb(null, false);
       }
+
       if (allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error(`CORS: origin '${origin}' is not allowed`));
+
+      console.warn(`[cors] Blocked unlisted origin: ${origin}`);
+      return cb(null, false);
     },
     credentials: true,
   })
