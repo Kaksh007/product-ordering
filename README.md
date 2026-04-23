@@ -1,45 +1,69 @@
-# Product Ordering Dashboard (MERN)
+# Kinetic Gallery — Product Ordering Dashboard
 
-A responsive web application for a packaging design company, where **designers** upload product mockups and **clients** browse them, place orders, and track status in real-time. Built end-to-end with the MERN stack: MongoDB, Express, React, and Node.js.
+A full-stack web application for packaging design companies. Designers publish product mockups; clients browse, order, and track fulfilment — all in one responsive interface.
 
-> Implements every requirement from the task brief — JWT auth, role-based dashboards, Multer uploads (local or Cloudinary), Zod + express-validator validation, real-time status polling, and production-ready deploy configs for Vercel + Render.
+**Live demo →** [https://product-ordering-theta.vercel.app](https://product-ordering-theta.vercel.app)  
+**API base →** [https://product-ordering-ajlh.onrender.com/api/health](https://product-ordering-ajlh.onrender.com/api/health)
+
+---
+
+## Overview
+
+| Role | What they can do |
+|---|---|
+| **Designer** | Upload mockups (name, description, price, category, image), edit/delete own work, accept or progress orders, view dashboard stats |
+| **Client** | Browse all mockups, place orders with quantity, track order status in real-time, cancel pending orders |
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, React Router v6, Tailwind CSS, Zod, Axios |
+| Backend | Node.js, Express, MongoDB + Mongoose |
+| Auth | JSON Web Tokens (JWT) with role-based protected routes |
+| Uploads | Multer — switchable between local disk and Cloudinary |
+| Validation | Zod (frontend) + express-validator (backend) |
+| Security | helmet, express-rate-limit, express-mongo-sanitize |
+| Deploy | Vercel (frontend) + Render (backend) + MongoDB Atlas |
 
 ---
 
 ## Features
 
-- **JWT authentication** with protected routes on both client and server
-- **Role-based experience** — designers upload and manage mockups, clients browse and order
-- **Image uploads** via Multer, with a pluggable strategy for either local disk or **Cloudinary**
-- **Order workflow** — pending → accepted → in production → shipped → completed (or cancelled)
-- **Real-time status updates** via lightweight API polling (every 5 s, pauses when tab is hidden)
-- **Validation** — Zod on the frontend, express-validator on the backend
-- **Responsive UI** — Tailwind CSS, mobile menu, sidebar navigation
-- **Clean error handling** — centralised Express error middleware, axios interceptors
+- **JWT authentication** — register as a designer or client, protected routes on both ends
+- **Role-based dashboards** — designers see performance metrics and manage mockups; clients see their order history and catalogue
+- **Image uploads** — drag-and-drop preview, MIME-type validation, pluggable Cloudinary or local storage
+- **Full order workflow** — `pending → accepted → in_production → shipped → completed` (or `cancelled`)
+- **Real-time status updates** — lightweight 5-second API polling, pauses automatically when the tab is hidden
+- **Comprehensive validation** — schema-level on the client (Zod), declarative chains on the server (express-validator)
+- **Production security** — security headers (helmet), brute-force protection (rate-limit), NoSQL injection prevention (mongo-sanitize), safe file extension handling
+- **Responsive layout** — sidebar navigation, mobile menu, works on all screen sizes
 
 ---
 
 ## Project structure
 
 ```
-BNV_MernStack_Task/
-├── backend/               # Express + MongoDB API
-│   ├── config/db.js
-│   ├── controllers/
-│   ├── middleware/
-│   ├── models/
-│   ├── routes/
-│   ├── validators/
-│   ├── uploads/           # local image storage (when UPLOAD_STRATEGY=local)
-│   ├── seed.js            # seeds demo users, mockups, orders
-│   └── server.js
-├── frontend/              # React (Vite) + Tailwind
+kinetic-gallery/
+├── backend/                  # Express + MongoDB REST API
+│   ├── config/               # Database connection
+│   ├── controllers/          # Route handlers (auth, mockups, orders)
+│   ├── middleware/           # JWT auth, upload, rate-limit, error handler
+│   ├── models/               # Mongoose schemas (User, Mockup, Order)
+│   ├── routes/               # Express routers
+│   ├── validators/           # express-validator rule sets
+│   ├── uploads/              # Local image storage (UPLOAD_STRATEGY=local)
+│   ├── seed.js               # Demo data seeder
+│   └── server.js             # App entry point
+├── frontend/                 # React (Vite) SPA
 │   └── src/
-│       ├── api/           # axios instance with auth interceptor
-│       ├── components/    # AppShell, ProtectedRoute, StatusBadge, ...
-│       ├── context/       # AuthContext
-│       ├── pages/         # Login, Register, Dashboard, Mockups, Upload, Orders, Profile
-│       └── schemas/       # Zod validation schemas
+│       ├── api/              # Axios instance with auth interceptor
+│       ├── components/       # Shared UI (AppShell, ProtectedRoute, StatusBadge…)
+│       ├── context/          # AuthContext
+│       ├── pages/            # Login, Register, Dashboard, Mockups, Upload, Orders, Profile
+│       └── schemas/          # Zod validation schemas
 ├── postman/
 │   └── Product-Ordering-Dashboard.postman_collection.json
 └── README.md
@@ -47,160 +71,155 @@ BNV_MernStack_Task/
 
 ---
 
-## Getting started
+## Local setup
 
 ### Prerequisites
 
 - Node.js 18+
-- MongoDB — local instance **or** a free MongoDB Atlas cluster
-- (Optional) a free [Cloudinary](https://cloudinary.com/) account if you want remote image storage
+- MongoDB (local instance **or** [MongoDB Atlas](https://www.mongodb.com/atlas) free tier)
+- Optional: [Cloudinary](https://cloudinary.com/) free account for remote image storage
 
 ### 1. Clone and install
 
 ```bash
-git clone <your-repo-url>
-cd BNV_MernStack_Task
+git clone <repo-url>
+cd kinetic-gallery
 
-# backend
 cd backend && npm install && cd ..
-
-# frontend
 cd frontend && npm install && cd ..
 ```
 
-### 2. Configure environment
+### 2. Configure environment variables
 
-**`backend/.env`** (copy from `backend/.env.example`):
+Create `backend/.env` (reference: `backend/.env.example`):
 
 ```env
 PORT=5000
 NODE_ENV=development
-MONGO_URI=mongodb://127.0.0.1:27017/product_ordering
+MONGO_URI=mongodb://127.0.0.1:27017/kinetic_gallery
 JWT_SECRET=replace_with_a_long_random_string
 JWT_EXPIRES_IN=7d
 CLIENT_ORIGIN=http://localhost:5173
 
-# "local" (default) or "cloudinary"
+# "local" (default) stores files in /uploads — "cloudinary" sends them to Cloudinary CDN
 UPLOAD_STRATEGY=local
 
-# Only required when UPLOAD_STRATEGY=cloudinary
+# Required only when UPLOAD_STRATEGY=cloudinary
 CLOUDINARY_CLOUD_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 ```
 
-**`frontend/.env`** (optional — defaults to the Vite proxy):
-
-```env
-VITE_API_URL=
-```
-
-### 3. Seed demo data (optional)
+### 3. Seed demo data
 
 ```bash
-cd backend
-npm run seed
+cd backend && npm run seed
 ```
 
-This creates two demo accounts you can sign in with immediately:
+Creates two ready-to-use accounts:
 
-| Role     | Email                  | Password      |
-|----------|------------------------|---------------|
-| Designer | designer@example.com   | password123   |
-| Client   | client@example.com     | password123   |
+| Role | Email | Password |
+|---|---|---|
+| Designer | designer@example.com | password123 |
+| Client | client@example.com | password123 |
 
-### 4. Run locally
-
-Open two terminals:
+### 4. Start development servers
 
 ```bash
-# terminal 1 — backend
-cd backend
-npm run dev            # http://localhost:5000
+# Terminal 1 — API
+cd backend && npm run dev       # → http://localhost:5000
 
-# terminal 2 — frontend
-cd frontend
-npm run dev            # http://localhost:5173
+# Terminal 2 — Frontend
+cd frontend && npm run dev      # → http://localhost:5173
 ```
 
-The Vite dev server proxies `/api` and `/uploads` to the backend, so no CORS setup is needed for local development.
+The Vite dev server proxies `/api` and `/uploads` to port 5000, so no CORS configuration is needed locally.
 
 ---
 
-## Navigation points
+## Navigation
 
-| Route               | Access                 | Purpose                             |
-|---------------------|------------------------|-------------------------------------|
-| `/login`            | Public                 | Sign in                             |
-| `/register`         | Public                 | Create designer or client account   |
-| `/dashboard`        | Authenticated          | Role-aware performance overview     |
-| `/mockups`          | Authenticated          | Browse / manage mockups             |
-| `/mockups/new`      | Designer only          | Upload a new mockup                 |
-| `/mockups/:id/edit` | Designer (owner) only  | Edit an existing mockup             |
-| `/orders`           | Authenticated          | Orders list with live polling       |
-| `/profile`          | Authenticated          | Account details                     |
+| Route | Access | Description |
+|---|---|---|
+| `/login` | Public | Sign in |
+| `/register` | Public | Create a designer or client account |
+| `/dashboard` | Authenticated | Role-specific performance overview |
+| `/mockups` | Authenticated | Browse or manage mockups |
+| `/mockups/new` | Designer | Upload a new mockup |
+| `/mockups/:id/edit` | Designer (owner) | Edit an existing mockup |
+| `/orders` | Authenticated | Order list with live status polling |
+| `/profile` | Authenticated | Account details |
 
 ---
 
-## REST API reference
+## REST API
 
-Base URL: `http://localhost:5000/api`
+Base URL (production): `https://product-ordering-ajlh.onrender.com/api`  
+Base URL (local): `http://localhost:5000/api`
 
-All protected endpoints require `Authorization: Bearer <token>`.
+All protected endpoints require the header:
+```
+Authorization: Bearer <token>
+```
 
 ### Auth
 
-| Method | Endpoint          | Body                                      | Returns                  |
-|--------|-------------------|-------------------------------------------|--------------------------|
-| POST   | `/auth/register`  | `{ name, email, password, role }`         | `{ token, user }`        |
-| POST   | `/auth/login`     | `{ email, password }`                     | `{ token, user }`        |
-| GET    | `/auth/me`        | —                                         | `{ user }`               |
+| Method | Endpoint | Body | Response |
+|---|---|---|---|
+| `POST` | `/auth/register` | `{ name, email, password, confirmPassword, role }` | `{ token, user }` |
+| `POST` | `/auth/login` | `{ email, password }` | `{ token, user }` |
+| `GET` | `/auth/me` | — | `{ user }` |
 
 ### Mockups
 
-| Method | Endpoint        | Role                  | Notes                                       |
-|--------|-----------------|-----------------------|---------------------------------------------|
-| GET    | `/mockups`      | Any                   | Designers see own; clients see all          |
-| GET    | `/mockups/:id`  | Any                   |                                             |
-| POST   | `/mockups`      | Designer              | `multipart/form-data` — field `image`       |
-| PUT    | `/mockups/:id`  | Owning designer       | `multipart/form-data` — `image` optional    |
-| DELETE | `/mockups/:id`  | Owning designer       | Blocks delete if active orders exist        |
+| Method | Endpoint | Role | Notes |
+|---|---|---|---|
+| `GET` | `/mockups` | Any | Designers see own; clients see all. Filter: `?category=` |
+| `GET` | `/mockups/:id` | Any | Designers restricted to own mockups |
+| `POST` | `/mockups` | Designer | `multipart/form-data`, field name: `image` |
+| `PUT` | `/mockups/:id` | Owning designer | `multipart/form-data`, `image` optional |
+| `DELETE` | `/mockups/:id` | Owning designer | Blocked if active orders exist |
 
 ### Orders
 
-| Method | Endpoint               | Role                        | Notes                                                  |
-|--------|------------------------|-----------------------------|--------------------------------------------------------|
-| GET    | `/orders`              | Any                         | Scoped to role (own / own-mockups)                     |
-| GET    | `/orders/stats`        | Designer                    | Dashboard aggregates                                   |
-| GET    | `/orders/:id`          | Owner or owning designer    |                                                        |
-| POST   | `/orders`              | Client                      | `{ mockupId, quantity, notes? }`                       |
-| PATCH  | `/orders/:id/status`   | Owning designer             | `{ status }`                                           |
-| DELETE | `/orders/:id`          | Owning client               | Cancels when still `pending`                           |
+| Method | Endpoint | Role | Notes |
+|---|---|---|---|
+| `GET` | `/orders` | Any | Scoped by role. Filter: `?status=` |
+| `GET` | `/orders/stats` | Designer | Dashboard aggregates |
+| `GET` | `/orders/:id` | Owner or owning designer | |
+| `POST` | `/orders` | Client | `{ mockupId, quantity, notes? }` |
+| `PATCH` | `/orders/:id/status` | Owning designer | `{ status }` |
+| `DELETE` | `/orders/:id` | Owning client | Only when status is `pending` |
 
-Full request/response examples live in `postman/Product-Ordering-Dashboard.postman_collection.json` — import it into Postman (or Insomnia) and set the `baseUrl` + `token` collection variables.
+Full request/response examples are in the Postman collection — import `postman/Product-Ordering-Dashboard.postman_collection.json` and set the `baseUrl` and `token` collection variables.
 
 ---
 
 ## Data models
 
 ```js
-// User
-{ name, email, password (hashed), role: 'designer' | 'client', createdAt, updatedAt }
+User    { name, email, password (bcrypt, 12 rounds), role: 'designer'|'client' }
 
-// Mockup
-{ name, description, price, category, imageUrl, imagePublicId, designer -> User }
+Mockup  { name, description, price, category, imageUrl, imagePublicId, designer → User }
 
-// Order
-{ client -> User, mockup -> Mockup, quantity, unitPrice, totalPrice,
-  status: pending | accepted | in_production | shipped | completed | cancelled,
-  notes, createdAt, updatedAt }
+Order   { client → User, mockup → Mockup, quantity, unitPrice, totalPrice,
+          status: 'pending'|'accepted'|'in_production'|'shipped'|'completed'|'cancelled',
+          notes }
 ```
 
 ---
 
-## Real-time status updates
+## Security
 
-The `/orders` page polls `GET /api/orders` every 5 seconds while the tab is visible. Each response embeds `serverTime`, which is used as the "last updated" marker. If a status changes between polls, a toast notification fires immediately — a lightweight alternative to WebSockets that keeps the stack simple and Render/Vercel-friendly.
+| Concern | Mitigation |
+|---|---|
+| Brute-force login | `express-rate-limit` — 10 attempts / 15 min / IP on all auth routes |
+| NoSQL injection | `express-mongo-sanitize` + explicit `String()` coercion on query params |
+| Security headers | `helmet` (CSP, HSTS, X-Frame-Options, CORP, etc.) |
+| File upload abuse | MIME-type whitelist; extension derived from MIME, not filename; files served with `Content-Disposition: attachment` |
+| JWT leakage | Fail-fast boot if `JWT_SECRET` is unset; `select: false` on password field |
+| CORS | Strict origin allow-list via `CLIENT_ORIGIN`; no wildcard with credentials |
+| Password storage | bcrypt, 12 salt rounds |
 
 ---
 
@@ -208,64 +227,71 @@ The `/orders` page polls `GET /api/orders` every 5 seconds while the tab is visi
 
 ### Backend → Render
 
-1. Push the `backend` folder to GitHub.
-2. Create a new **Web Service** on [Render](https://render.com/) pointing at the repo.
-3. Build command: `npm install`. Start command: `node server.js`.
-4. Add environment variables matching `backend/.env.example` (including `MONGO_URI` pointing at a MongoDB Atlas cluster).
-5. Set `CLIENT_ORIGIN` to your Vercel URL, e.g. `https://kinetic-gallery.vercel.app`.
-6. (Recommended) Set `UPLOAD_STRATEGY=cloudinary` on Render, because Render's disk is ephemeral. Provide the three `CLOUDINARY_*` keys.
+1. Connect the repository to a new **Web Service** on [Render](https://render.com/).
+2. Build command: `npm install` — Start command: `node server.js`
+3. Set these environment variables in the Render dashboard:
+
+```
+MONGO_URI          → MongoDB Atlas connection string
+JWT_SECRET         → long random string (node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
+CLIENT_ORIGIN      → https://your-app.vercel.app
+NODE_ENV           → production
+UPLOAD_STRATEGY    → cloudinary   (Render's disk is ephemeral — use Cloudinary in production)
+CLOUDINARY_CLOUD_NAME / CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
+```
 
 ### Frontend → Vercel
 
-1. Push the `frontend` folder to GitHub (or use the same repo with a monorepo config).
-2. Import the project in [Vercel](https://vercel.com/).
-3. Framework preset: **Vite**. Build command: `npm run build`. Output: `dist`.
-4. Set `VITE_API_URL` to your Render backend URL, e.g. `https://your-app.onrender.com`.
+1. Import the repository in [Vercel](https://vercel.com/).
+2. Set **Root Directory** to `frontend`.
+3. Framework preset: **Vite** — Build: `npm run build` — Output: `dist`
+4. Set environment variable: `VITE_API_URL=https://your-render-url.onrender.com`
 
-### Heroku (alternative for backend)
+The `frontend/vercel.json` rewrite rule is already in place — all routes serve `index.html` so React Router handles client-side navigation correctly.
 
-`heroku create`, push the `backend` folder, then `heroku config:set MONGO_URI=... JWT_SECRET=... UPLOAD_STRATEGY=cloudinary CLOUDINARY_*=...`.
+---
+
+## Cloudinary setup
+
+The upload strategy is controlled by a single env var — no code changes needed.
+
+1. Create a free account at [cloudinary.com](https://cloudinary.com/users/register/free)
+2. Copy **Cloud Name**, **API Key**, **API Secret** from the dashboard
+3. Add to `backend/.env` (or Render environment variables):
+
+```env
+UPLOAD_STRATEGY=cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+Uploaded images are stored under `kinetic_gallery/mockups/`. Deleting a mockup also removes the image from Cloudinary automatically.
 
 ---
 
 ## Scripts
 
-| Location    | Command          | Description                                     |
-|-------------|------------------|-------------------------------------------------|
-| `backend`   | `npm run dev`    | Start API with nodemon                          |
-| `backend`   | `npm start`      | Start API with node (for production)            |
-| `backend`   | `npm run seed`   | Reset and seed demo data                        |
-| `frontend`  | `npm run dev`    | Vite dev server with `/api` proxy               |
-| `frontend`  | `npm run build`  | Production build to `dist/`                     |
-| `frontend`  | `npm run preview`| Preview the built app                           |
+| Location | Command | Description |
+|---|---|---|
+| `backend` | `npm run dev` | Start API with nodemon (watch mode) |
+| `backend` | `npm start` | Start API with node (production) |
+| `backend` | `npm run seed` | Reset and seed demo data |
+| `frontend` | `npm run dev` | Vite dev server with API proxy |
+| `frontend` | `npm run build` | Production build to `dist/` |
+| `frontend` | `npm run preview` | Preview the production build locally |
 
 ---
 
-## Tech choices
+## Design decisions
 
-- **Tailwind CSS** (chosen over Material-UI) — keeps the bundle lean and matches the reference design (Kinetic Gallery) exactly.
-- **Vite** — instant HMR, fast builds, zero ejection.
-- **axios + interceptors** — automatic token injection and consistent error shape.
-- **Zod** for client-side validation — the schema doubles as type-safety documentation.
-- **express-validator** for server-side validation — declarative chains, great error messages.
-- **Polling vs. sockets** — the brief explicitly asks for "real-time order status updates via API polling", so we kept it simple and stateless.
+**Tailwind CSS over Material-UI** — keeps the bundle lean and matches the Kinetic Gallery reference design pixel-for-pixel without fighting component overrides.
 
----
+**API polling over WebSockets** — the order status feature requires near-real-time updates but not instant delivery. A 5-second poll is stateless, works identically on Render free tier and serverless, and requires zero extra infrastructure. The implementation pauses automatically when the browser tab is hidden to avoid unnecessary load.
 
-## Submission checklist
+**Pluggable upload strategy** — a single `UPLOAD_STRATEGY` env var switches between local disk (ideal for development) and Cloudinary (required for production on stateless hosts like Render). No code changes, no separate branches.
 
-- [x] MongoDB models: `User` (designer/client), `Mockup` (imageUrl, designer), `Order` (client, mockup, status)
-- [x] JWT auth with protected routes
-- [x] Multer uploads — local folder + Cloudinary fallback
-- [x] Zod (frontend) + express-validator (backend) validation
-- [x] React Router, Tailwind CSS, responsive layout
-- [x] Login / Register / Dashboard / Mockups / Orders pages
-- [x] Image upload preview + order form with quantity/pricing
-- [x] Real-time order status via polling
-- [x] README with setup, API docs, deploy notes
-- [x] Postman collection in `postman/`
-- [ ] Live demo links — add after deploying to Vercel + Render
-- [ ] Video walkthrough (2–5 min) — record post-deploy
+**Zod + express-validator** — Zod on the frontend catches errors before a request is ever sent; express-validator on the backend ensures the API is safe regardless of client behaviour. Both share the same field names so error messages are consistent end-to-end.
 
 ---
 
