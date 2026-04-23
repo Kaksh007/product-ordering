@@ -8,6 +8,12 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
+  // Warmup ping — fire-and-forget on every app load so Render's free-tier backend
+  // starts its cold-start the moment the page opens, not after the user hits Login.
+  useEffect(() => {
+    api.get('/api/health').catch(() => {}); // silence errors — purely a wakeup call
+  }, []);
+
   // When a token is present on mount, hydrate /me so we know who the user is.
   useEffect(() => {
     const bootstrap = async () => {

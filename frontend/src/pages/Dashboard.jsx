@@ -5,6 +5,54 @@ import toast from 'react-hot-toast';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext.jsx';
 
+/* ── Skeleton primitives ─────────────────────────────────────────────── */
+const Bone = ({ className = '' }) => (
+  <div className={`animate-pulse rounded-md bg-slate-200 ${className}`} />
+);
+
+const StatCardSkeleton = () => (
+  <div className="card space-y-4">
+    <div className="flex items-center justify-between">
+      <Bone className="h-3 w-24" />
+      <Bone className="h-5 w-12 rounded-full" />
+    </div>
+    <Bone className="h-8 w-20" />
+    <Bone className="h-3 w-16" />
+  </div>
+);
+
+const MockupCardSkeleton = () => (
+  <div className="card overflow-hidden p-0">
+    <Bone className="aspect-[4/3] w-full rounded-none" />
+    <div className="space-y-2 p-4">
+      <Bone className="h-4 w-3/4" />
+      <Bone className="h-3 w-1/2" />
+    </div>
+  </div>
+);
+
+const DashboardSkeleton = () => (
+  <div className="space-y-8">
+    <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="space-y-2">
+        <Bone className="h-8 w-56" />
+        <Bone className="h-4 w-72" />
+      </div>
+      <Bone className="h-9 w-32 rounded-lg" />
+    </div>
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {[...Array(4)].map((_, i) => <StatCardSkeleton key={i} />)}
+    </div>
+    <div className="space-y-4">
+      <Bone className="h-6 w-40" />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[...Array(4)].map((_, i) => <MockupCardSkeleton key={i} />)}
+      </div>
+    </div>
+  </div>
+);
+
+/* ── Stat card ───────────────────────────────────────────────────────── */
 const StatCard = ({ label, value, hint, icon: Icon, badge }) => (
   <div className="card">
     <div className="flex items-center justify-between">
@@ -22,6 +70,7 @@ const StatCard = ({ label, value, hint, icon: Icon, badge }) => (
   </div>
 );
 
+/* ── Dashboard ───────────────────────────────────────────────────────── */
 const Dashboard = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
@@ -32,18 +81,19 @@ const Dashboard = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [mockupsRes, ordersRes] = await Promise.all([
-          api.get('/api/mockups'),
-          api.get('/api/orders'),
-        ]);
+        // Fire all requests in parallel — for designers this used to be
+        // 2 sequential round-trips; now everything lands in one pass.
+        const requests = [api.get('/api/mockups'), api.get('/api/orders')];
+        if (user.role === 'designer') requests.push(api.get('/api/orders/stats'));
+
+        const [mockupsRes, ordersRes, statsRes] = await Promise.all(requests);
+
         setMockups(mockupsRes.data.mockups);
         setRecentOrders(ordersRes.data.orders.slice(0, 5));
 
         if (user.role === 'designer') {
-          const statsRes = await api.get('/api/orders/stats');
           setStats(statsRes.data);
         } else {
-          // Client-side stats: computed locally from returned orders.
           const orders = ordersRes.data.orders;
           setStats({
             totalMockups: mockupsRes.data.count,
@@ -69,7 +119,7 @@ const Dashboard = () => {
     load();
   }, [user.role]);
 
-  if (loading) return <div className="text-slate-500">Loading dashboard…</div>;
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-8">
